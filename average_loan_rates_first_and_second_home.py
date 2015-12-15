@@ -10,10 +10,10 @@ from pyExcelerator import *
 #尝试连接数据库data_personal_house_mortgage_loans
 try:
     conn = MySQLdb.connect(
-            host = '10.0.8.233',
+            host = '***',
             port = 3306,
-            user = 'alas',
-            passwd = '6143',
+            user = '***',
+            passwd = '***',
             db = 'data_personal_house_mortgage_loans',
             charset = 'utf8')
 except Exception, e:
