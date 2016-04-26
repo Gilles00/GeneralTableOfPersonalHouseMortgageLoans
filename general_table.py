@@ -34,10 +34,10 @@ prop_ave_loan_rates_1and2_home = np.zeros((mth, 2, 4))
 
 try:
     conn = MySQLdb.connect(
-            host = '10.2.16.59',
+            host = '*****',
             port = 3306,
-            user = 'alas',
-            passwd = '6143',
+            user = '****',
+            passwd = '****',
             db = 'data_personal_house_mortgage_loans',
             charset = 'utf8',)
 except Exception, e:
