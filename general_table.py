@@ -1,12 +1,40 @@
 # -*- encoding:utf-8 -*-
 import MySQLdb
-import numpy as np
 import pandas as pd
 import sys
+import numpy as np
+
+month2015 = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
+             'august', 'september', 'october', 'november', 'december']
+for i in range(len(month2015)):
+    month2015[i] += '2015' 
+
+month2016 = ['january', 'february', 'march', 'april']
+for i in range(len(month2016)):
+    month2016[i] += '2016' 
+
+month = month2016
+mth = len(month)
+
+#FTCity = [u'北京', u'上海', u'广州',  u'深圳']
+
+city = [u'北京', u'上海', u'广州', u'深圳', u'杭州', u'南京', u'武汉',
+        u'重庆', u'成都', u'天津', u'青岛', u'长沙', u'苏州', u'厦门',
+        u'郑州', u'西安', u'无锡', u'哈尔滨', u'佛山', u'珠海', u'东莞',
+        u'海口', u'宁波', u'合肥', u'南昌', u'大连', u'昆明', u'济南', 
+        u'沈阳', u'太原', u'乌鲁木齐', u'南宁', u'福州', u'长春', u'石家庄',]
+cty = len(city)
+
+ave_loan_rates_diff_city = np.zeros((mth, 35, 2))
+prop_discount_first_home = np.zeros((mth, 35, 1))
+prop_stop_handling_loans = np.zeros((mth, 35, 1))
+prop_ave_loan_rates_first_home_diff_city = np.zeros((mth, 35, 4))
+prop_ave_loan_rates_second_home_diff_city = np.zeros((mth, 35, 4))
+prop_ave_loan_rates_1and2_home = np.zeros((mth, 2, 4))
 
 try:
     conn = MySQLdb.connect(
-            host = '10.0.9.127',
+            host = '10.2.16.59',
             port = 3306,
             user = 'alas',
             passwd = '6143',
@@ -15,30 +43,9 @@ try:
 except Exception, e:
     print e
     sys.exit()
-cur = conn.cursor()
 
-month = ['january', 'february', 'march', 'april', 'may', 'june', 
-         'july', 'august', 'september', 'october', 'november', 'december']
-
-#city = [u'北京', u'上海', u'广州',  u'深圳']
-
-city = [u'北京', u'上海', u'广州', u'深圳', u'杭州', u'南京', u'武汉',
-        u'重庆', u'成都', u'天津', u'青岛', u'长沙', u'苏州', u'厦门',
-        u'郑州', u'西安', u'无锡', u'哈尔滨', u'佛山', u'珠海', u'东莞',
-        u'海口', u'宁波', u'合肥', u'南昌', u'大连', u'昆明', u'济南', 
-        u'沈阳', u'太原', u'乌鲁木齐', u'南宁', u'福州', u'长春', u'石家庄',]
-
-ave_loan_rates_diff_city = np.zeros((3, 35, 2))
-prop_discount_first_home = np.zeros((3, 35, 1))
-prop_stop_handling_loans = np.zeros((3, 35, 1))
-ave_loan_rates_first_home_diff_bank = np.zeros((3, 19, 1))
-prop_ave_loan_rates_first_home_diff_city = np.zeros((3, 35, 4))
-prop_ave_loan_rates_second_home_diff_city = np.zeros((3, 35, 4))
-prop_ave_loan_rates_1and2_home = np.zeros((3, 2, 4))
-
-for i in range(len(month)):
-    month[i] += '2015'
-    for j in range(len(city)):
+for i in range(mth):
+    for j in range(cty):
         mysql = """
             select
                 loan_rates_first_home,
@@ -60,7 +67,7 @@ for i in range(len(month)):
         ave_loan_rates_diff_city[i, j] = np.around(
                 df[['loan_rates_first_home', 
                     'loan_rates_second_home']].mean()*4.9,
-                decimals = 3)
+                decimals = 4)
 #        print month[i], city[j], '\t\t', ave_loan_rates_diff_city[i, j]
 #        print '\n'
 
@@ -114,7 +121,7 @@ for i in range(len(month)):
 #    print '\n'
 
 #全国首套和二套利率的分类占比 
-for i in range(len(month)):
+for i in range(mth):
     mysql2 = """
             select
                 loan_rates_first_home,
@@ -167,14 +174,18 @@ bank = [u'工商银行', u'农业银行', u'中国银行', u'建设银行', u'�
         u'中信银行', u'光大银行', u'民生银行', u'招商银行', u'广发银行', u'浦发银行',
         u'兴业银行', u'华夏银行', u'东亚银行', u'渣打银行', u'花旗银行', u'汇丰银行',
         u'恒生银行']
-for i in range(len(month)):
+month_df4 = month2015 + month2016
+mth_df4 = len(month_df4)
+ave_loan_rates_first_home_diff_bank = np.zeros((mth_df4, len(bank), 1))
+
+for i in range(mth_df4):
     for j in range(len(bank)):
         mysql3 = """
             select
                 loan_rates_first_home
             from %s
             where bank = "%s"
-                """ % (month[i], bank[j])
+                """ % (month_df4[i], bank[j])
         try:
             df = pd.read_sql(mysql3, con=conn)
         except Exception, e:
@@ -186,6 +197,8 @@ for i in range(len(month)):
                 df4.mean(), decimals = 4)
 #        print ave_loan_rates_first_home_diff_bank[i, j, 0],
 #    print '\n'
+
+conn.close()
     
 
 from openpyxl import Workbook
@@ -194,114 +207,126 @@ wb = Workbook()
 ws1 = wb.active
 ws1.title = u'35城市首套房平均利率'
 ws1.append([''] + month) 
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         l.append(ave_loan_rates_diff_city[i, j, 0])
     ws1.append(l) 
 
 ws2 = wb.create_sheet()
 ws2.title = u'35城市二套房平均利率'
 ws2.append([''] + month) 
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         l.append(ave_loan_rates_diff_city[i, j, 1])
     ws2.append(l) 
 
 ws23 = wb.create_sheet()
-ws23.title = u'各城市每月平均利率环比升降'
-ws23.append([u'银行'] + month[::-1][:2] + [u'两月利率较小者', u'同比增加按百分点数', u'同比降低百分点数'])
+ws23.title = u'各银行首套房每月平均利率环比升降'
+ws23.append([u'银行'] + month_df4 + [u'最近两月利率较小者', u'同比增加按百分点数', u'同比降低百分点数'])
 
 for j in range(len(bank)):
     l = []
     l.append(bank[j])
-    for i in range(len(month)-1):
-        l.append(ave_loan_rates_first_home_diff_bank[len(month)-1-i, j, 0])
-    a = ave_loan_rates_first_home_diff_bank[len(month)-1, j, 0]
-    b = ave_loan_rates_first_home_diff_bank[len(month)-2, j, 0] 
+    for i in range(mth_df4):
+        l.append(ave_loan_rates_first_home_diff_bank[i, j, 0])
+    a = ave_loan_rates_first_home_diff_bank[mth_df4-1, j, 0]
+    b = ave_loan_rates_first_home_diff_bank[mth_df4-2, j, 0] 
     if a > b:
         l.append(b)
-        l.append(np.around(a-b, decimals = 3)) 
+        l.append(np.around(a-b, decimals = 4)) 
         l.append(0)
     else:
         l.append(a)
         l.append(0)
-        l.append(np.around(b-a, decimals = 3))
+        l.append(np.around(b-a, decimals = 4))
     ws23.append(l)
 
 ws3 = wb.create_sheet()
 ws3.title = u'优惠占比'
 ws3.append([''] + month)
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         l.append(prop_discount_first_home[i, j, 0])
     ws3.append(l)
 
 ws4 = wb.create_sheet()
 ws4.title = u'停贷占比'
 ws4.append([''] + month) 
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         l.append(prop_stop_handling_loans[i, j, 0])
     ws4.append(l)
 
 ws5 = wb.create_sheet()
 ws5.title = u'首套房利率分类占比'
+
+"""
 ws5.merge_cells('B1:E1')
 ws5['B1'] = month[0]
 ws5.merge_cells('F1:I1')
 ws5['F1'] = month[1]
 ws5.merge_cells('J1:M1')
 ws5['J1'] = month[2]
+or
+ws5.merge_cells(chr(66)+'1:'+chr(69)+'1')
+ws5[chr(66)+'1'] = month[0]
+ws5.merge_cells(chr(70)+'1:'+chr(73)+'1')
+ws5[chr(70)+'1'] = month[1]
+ws5.merge_cells(chr(74)+'1:'+chr(77)+'1')
+ws5[chr(74)+'1'] = month[2]
+"""
+
+for i in range(mth):
+    ws5.merge_cells(chr(66+i*4)+'1:'+chr(66+i*4+3)+'1')
+    ws5[chr(66+i*4)+'1'] = month[i]
+
 prop_clas_first_home = [
         '9折以下', '9折(含)~基准', '基准及以上', '停贷']
-ws5.append([''] + prop_clas_first_home*len(month)) 
+ws5.append([''] + prop_clas_first_home*mth) 
 
 l = [u'全国']
 prop_ave_loan_rates_1and2_home
-for i in range(len(month)):
+for i in range(mth):
     for x in range(4):
         l.append(prop_ave_loan_rates_1and2_home[i, 0, x])
 ws5.append(l)
 
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         for f in range(4):
             l.append(prop_ave_loan_rates_first_home_diff_city[i, j, f])
     ws5.append(l)
 
 ws6 = wb.create_sheet()
 ws6.title = u'二套房利率分类占比'
-ws6.merge_cells('B1:E1')
-ws6['B1'] = month[0]
-ws6.merge_cells('F1:I1')
-ws6['F1'] = month[1]
-ws6.merge_cells('J1:M1')
-ws6['J1'] = month[2]
+for i in range(mth):
+    ws6.merge_cells(chr(66+i*4)+'1:'+chr(66+i*4+3)+'1')
+    ws6[chr(66+i*4)+'1'] = month[i]
 prop_clas_second_home = [
         '基准及以下', '基准~基准上浮10%(含)', '基准上浮以上', '停贷']
-ws6.append([''] + prop_clas_second_home*len(month)) 
+ws6.append([''] + prop_clas_second_home*mth) 
 
 l = [u'全国']
 prop_ave_loan_rates_1and2_home
-for i in range(len(month)):
+for i in range(mth):
     for x in range(4):
         l.append(prop_ave_loan_rates_1and2_home[i, 1, x])
 ws6.append(l)
 
-for j in range(len(city)):
+for j in range(cty):
     l = []
     l.append(city[j])
-    for i in range(len(month)):
+    for i in range(mth):
         for f in range(4):
             l.append(prop_ave_loan_rates_second_home_diff_city[i, j, f])
     ws6.append(l)
